@@ -126,6 +126,64 @@ class Client(BaseConnection):
             return False
         return resp
 
+    async def get_followers(self, channel):
+        """|coro|
+
+        Method which retrieves a channel's followers.
+
+        Parameters
+        ------------
+        channel: str or int
+            The channel to retrieve from. Could be either Context, channel, string or integer.
+
+        Returns
+        _________
+        dict
+            Dict containing channel followers data.
+
+        Notes
+        -------
+        Channels which do not exist will be None or missing.
+
+        Raises
+        --------
+        TwitchHTTPException
+            Bad request while fetching followers.
+        """
+        if isinstance(channel, Context):
+            channel = channel.channel
+
+        return await self._http._get_followers(channel)
+
+    async def get_user(self, user: (str, int)):
+        """|coro|
+
+        Method which retrieves information on a user.
+
+        Parameters
+        ------------
+        user: str or int
+            A user name and/or id.
+
+        Returns
+        ---------
+        dict
+            Dict containing active streamer data.
+
+        Notes
+        -------
+        Users which do not exist will be None or missing.
+
+        Raises
+        --------
+        TwitchHTTPException
+            Bad request while fetching user.
+        """
+        if not isinstance(user, (str, int)):
+            raise ClientError('User must be either a str or int. Type {} was provided.'.format(type(user)))
+
+        return await self._http._get_user(user)
+
     @property
     def rate_status(self):
         """The current rate limit status.

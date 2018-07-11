@@ -1,4 +1,4 @@
-from .errors import TwitchHTTPException
+from .errors import TwitchHTTPException, ChannelNotFoundError
 
 BASE = 'https://api.twitch.tv/helix/'
 BASE5 = 'https://api.twitch.tv/kraken/'
@@ -151,14 +151,41 @@ class HttpSession:
         if not self._api_token:
             return
 
-        channel = await self._get_stream(channel)
+        try:
+            channel = int(channel)
+        except (TypeError, ValueError):
+            channel = await self._get_user(channel)
+            if channel['data']:
+                channel = channel['data'][0]['id']
+            else:
+                return None
 
-        url = BASE + 'follows?first=100?to_id={}'.format(channel['data'][0]['id'])
+        url = BASE + 'users/follows?to_id={}'.format(channel)
 
         try:
-            resp, cont = await self.fetch(BASE.format(url), timeout=5, return_type='json', headers=self._theaders)
+            resp, cont = await self.fetch(url, timeout=5, return_type='json', headers=self._theaders)
         except Exception as e:
             return TwitchHTTPException('There was a problem with your request. {}'.format(e))
 
-        if len(resp['data']) > 99:
-            pass
+        return cont
+
+    # TODO Error Handling
+    @_check_cid
+    async def _get_user(self, user):
+
+        try:
+            user = int(user)
+        except (TypeError, ValueError):
+            user_url = BASE + 'users?login={}'.format(user)
+        else:
+            user_url = BASE + 'users?id={}'.format(user)
+
+        try:
+            resp, cont = await self.fetch(user_url, timeout=10, return_type='json', headers=self._theaders)
+        except Exception as e:
+            return TwitchHTTPException('There was a problem with your request. {}'.format(e))
+
+        if not resp.status == 200:
+            raise TwitchHTTPException('{}:: There was a problem with your request. Try again.'.format(resp.status))
+
+        return cont
