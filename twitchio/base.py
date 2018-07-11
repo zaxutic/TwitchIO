@@ -317,7 +317,10 @@ class BaseConnection:
 
         elif action == 'MODE':
             mdata = re.match(r':jtv MODE #(?P<channel>.+?[a-z0-9])\s(?P<status>[\+\-]o)\s(?P<user>.*[a-z0-9])', raw)
-            mstatus = mdata.group('status')
+            if mdata:
+                mstatus = mdata.group('status')
+            else:
+                return
 
             user = User(author=mdata.group('user'), channel=channel, tags=tags, _writer=self._writer)
 
